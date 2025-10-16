@@ -1,7 +1,32 @@
 import http from 'k6/http';
 import { Trend } from 'k6/metrics';
 
+import addresses from './data.js';
+
 const respTime = new Trend('resp_time_ms', true); // garde chaque valeur (for trend export)
+
+// const host = __ENV.HOST || 'http://localhost:1407';
+const host = 'http://172.17.0.2:8080';
+// const host =  'http://localhost:8080';
+// const host =  'http://127.0.0.1:8080';
+// const host = 'https://dev.icr-api.sortandgroup.fr';
+
+const url = `${host}/api/upu/_msearch`;
+
+const headers = {
+  'Content-Type': 'application/json',
+  // 'Authorization': `Bearer ${__ENV.API_TOKEN || ''}`, // optionnel
+  'securityToken': __ENV.API_TOKEN || '' // optionnel, selon configuration du serveur
+};
+
+// console.log('Using __ENV:', JSON.stringify(__ENV));
+// console.log('Using __ENV:', JSON.stringify(__ENV.API_TOKEN));
+
+// console.log(`Using host: ${host}`);
+// console.log(`Using url: ${url}`);
+
+// console.log('Using __ENV:', JSON.stringify(headers));
+
 
 export const options = {
   discardResponseBodies: true,
@@ -28,27 +53,23 @@ export const options = {
   },
 };
 
+// console.log(`Using host: ${host}`);
+// console.log(`Using addresses`, JSON.stringify(addresses));
+
 export default function () {
 
-  const url = __ENV.TARGET_URL || 'https://dev.icr-api.sortandgroup.fr/api/upu/_msearch';
-  const headers = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${__ENV.API_TOKEN || ''}`, // optionnel
-  };
-
+  const randomIndex = Math.floor(Math.random() * addresses.length);
+  const selectedAddress = addresses[randomIndex];
   const data = {
-    "addresses": [
-      {
-          "reference": "xxx",
-          "address": "289 RUE DU POSTES",
-          "postalCode": "69000",
-          "locality": "Lyon",
-          "country": "france"
-      }
-    ]
+    "addresses": [selectedAddress]
   };
 
+  console.log(`Using url: ${url}`);
 
-  const res = http.post(url, { headers, timeout: '60s', data });
+  const res = http.post(url, JSON.stringify(data), { headers, timeout: '60s' });
+  if (res.status !== 200) {
+    console.error(`Error: ${res.status} - ${res.body} - ${res.message}`);
+  }
   respTime.add(res.timings.duration);
 }
+

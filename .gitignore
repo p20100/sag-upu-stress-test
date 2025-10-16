@@ -1,1 +1,4 @@
 .env
+out-summary.json
+out.json
+/node_modules
